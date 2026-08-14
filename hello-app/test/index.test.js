@@ -1,20 +1,18 @@
 import nock from "nock";
 import myProbotApp from "../index.js";
 import { Probot, ProbotOctokit } from "probot";
-import fs from "node:fs";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { generateKeyPairSync } from "node:crypto";
 import payload from "./fixtures/pull_request.opened.json" with { type: "json" };
 
 import { describe, beforeEach, afterEach, test } from "node:test";
 import assert from "node:assert";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-
-const privateKey = fs.readFileSync(
-  path.join(__dirname, "fixtures/mock-cert.pem"),
-  "utf-8",
-);
+// Ephemeral test key — never commit a PEM fixture
+const { privateKey } = generateKeyPairSync("rsa", {
+  modulusLength: 2048,
+  privateKeyEncoding: { type: "pkcs8", format: "pem" },
+  publicKeyEncoding: { type: "spki", format: "pem" },
+});
 
 describe("PR Review Assistant", () => {
   let probot;
