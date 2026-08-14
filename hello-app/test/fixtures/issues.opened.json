@@ -1,0 +1,19 @@
+{
+  "action": "opened",
+  "issue": {
+    "number": 1,
+    "title": "Bug: the button is broken",
+    "user": {
+      "login": "hiimbex"
+    }
+  },
+  "repository": {
+    "name": "testing-things",
+    "owner": {
+      "login": "hiimbex"
+    }
+  },
+  "installation": {
+    "id": 2
+  }
+}
