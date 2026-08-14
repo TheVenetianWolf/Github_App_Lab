@@ -4,7 +4,7 @@ import { Probot, ProbotOctokit } from "probot";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import payload from "./fixtures/issues.opened.json" with { type: "json" };
+import payload from "./fixtures/pull_request.opened.json" with { type: "json" };
 
 import { describe, beforeEach, afterEach, test } from "node:test";
 import assert from "node:assert";
@@ -16,7 +16,7 @@ const privateKey = fs.readFileSync(
   "utf-8",
 );
 
-describe("Bug auto-labeler", () => {
+describe("PR Review Assistant", () => {
   let probot;
 
   beforeEach(() => {
@@ -33,37 +33,61 @@ describe("Bug auto-labeler", () => {
     probot.load(myProbotApp);
   });
 
-  test("adds a bug label when the issue title contains bug", async () => {
+  test("posts a congratulatory review for bite-sized PRs", async () => {
     const mock = nock("https://api.github.com")
       .post("/app/installations/2/access_tokens")
       .reply(200, {
         token: "test",
         permissions: {
-          issues: "write",
+          pull_requests: "write",
         },
       })
-      .post("/repos/hiimbex/testing-things/issues/1/labels", (body) => {
-        assert.deepEqual(body, { labels: ["bug"] });
+      .post("/repos/hiimbex/testing-things/pulls/1/reviews", (body) => {
+        assert.equal(body.event, "COMMENT");
+        assert.match(body.body, /3 files/);
+        assert.match(body.body, /42 lines/);
+        assert.match(body.body, /Great job/);
+        assert.doesNotMatch(body.body, /Warning/);
         return true;
       })
       .reply(200);
 
-    await probot.receive({ name: "issues", payload });
+    await probot.receive({ name: "pull_request", payload });
 
     assert.deepStrictEqual(mock.pendingMocks(), []);
   });
 
-  test("does nothing when the issue title does not contain bug", async () => {
-    const nonBugPayload = {
+  test("posts a warning review for massive PRs", async () => {
+    const largePayload = {
       ...payload,
-      issue: {
-        ...payload.issue,
-        title: "Feature: add dark mode",
+      pull_request: {
+        ...payload.pull_request,
+        changed_files: 40,
+        additions: 501,
       },
     };
 
-    // No GitHub API calls expected — any request would fail nock's disableNetConnect
-    await probot.receive({ name: "issues", payload: nonBugPayload });
+    const mock = nock("https://api.github.com")
+      .post("/app/installations/2/access_tokens")
+      .reply(200, {
+        token: "test",
+        permissions: {
+          pull_requests: "write",
+        },
+      })
+      .post("/repos/hiimbex/testing-things/pulls/1/reviews", (body) => {
+        assert.equal(body.event, "COMMENT");
+        assert.match(body.body, /40 files/);
+        assert.match(body.body, /501 lines/);
+        assert.match(body.body, /Warning/);
+        assert.doesNotMatch(body.body, /Great job/);
+        return true;
+      })
+      .reply(200);
+
+    await probot.receive({ name: "pull_request", payload: largePayload });
+
+    assert.deepStrictEqual(mock.pendingMocks(), []);
   });
 
   afterEach(() => {

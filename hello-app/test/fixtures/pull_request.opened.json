@@ -1,0 +1,21 @@
+{
+  "action": "opened",
+  "number": 1,
+  "pull_request": {
+    "number": 1,
+    "changed_files": 3,
+    "additions": 42,
+    "user": {
+      "login": "hiimbex"
+    }
+  },
+  "repository": {
+    "name": "testing-things",
+    "owner": {
+      "login": "hiimbex"
+    }
+  },
+  "installation": {
+    "id": 2
+  }
+}
